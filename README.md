@@ -40,6 +40,21 @@ All configuration is via environment variables (see `icann-rdap-srv` docs). Defa
 | `RDAP_SRV_LISTEN_ADDR` | `0.0.0.0` | Bind address |
 | `RDAP_SRV_LISTEN_PORT` | `3000` | Bind port |
 | `RDAP_SRV_LOG` | `info` | Log level |
+| `RDAP_SRV_ACCESS_LOG` | `true` | Enable HTTP access logging |
+| `RDAP_SRV_TLD_BOOTSTRAP` | `true` | Enable TLD bootstrap fetching |
+| `RDAP_SRV_INR_BACKUP_BOOTSTRAP` | `true` | Enable INR (address/ASN) backup bootstrap source |
+| `RDAP_SRV_IP_RDAP_UP` | `true` | Enable IPv4/IPv6 RDAP `up` relation referrals |
+| `RDAP_SRV_IP_RDAP_DOWN` | `true` | Enable IPv4/IPv6 RDAP `down` relation referrals |
+| `RDAP_SRV_IP_RDAP_TOP` | `true` | Enable IPv4/IPv6 RDAP `top` relation referrals |
+| `RDAP_SRV_IP_RDAP_BOTTOM` | `true` | Enable IPv4/IPv6 RDAP `bottom` relation referrals |
+| `RDAP_SRV_AUTNUM_RDAP_TOP` | `true` | Enable ASN RDAP `top` relation referrals |
+| `RDAP_SRV_AUTNUM_RDAP_UP` | `true` | Enable ASN RDAP `up` relation referrals |
+| `RDAP_SRV_AUTNUM_RDAP_DOWN` | `true` | Enable ASN RDAP `down` relation referrals |
+| `RDAP_SRV_AUTNUM_RDAP_BOTTOM` | `true` | Enable ASN RDAP `bottom` relation referrals |
+| `RDAP_SRV_DOMAIN_RDAP_UP` | `true` | Enable domain RDAP `up` relation referrals |
+| `RDAP_SRV_DOMAIN_RDAP_DOWN` | `true` | Enable domain RDAP `down` relation referrals |
+| `RDAP_SRV_DOMAIN_RDAP_TOP` | `true` | Enable domain RDAP `top` relation referrals |
+| `RDAP_SRV_DOMAIN_RDAP_BOTTOM` | `true` | Enable domain RDAP `bottom` relation referrals |
 
 Override at runtime, e.g.:
 
