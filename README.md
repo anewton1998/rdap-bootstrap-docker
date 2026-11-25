@@ -62,6 +62,22 @@ Override at runtime, e.g.:
 docker run -d -p 3000:3000 -e RDAP_SRV_LOG=debug rdap-bootstrap
 ```
 
+## Redirects for TLDs missing from the IANA bootstrap
+
+Some TLDs are delegated in the root zone but have no entry in the IANA RDAP DNS
+bootstrap. The optional [`tools/rdap-tld-redirect-gen`](tools/rdap-tld-redirect-gen)
+crate scans the root zone, probes each uncovered TLD for an RDAP server at
+`https://nic.<tld>`, `https://rdap.nic.<tld>`, and `https://nic.<tld>/rdap`, and
+writes `307` redirect templates into the data directory so the server can refer
+queries for those TLDs. It supports a configurable exception list of TLDs to skip
+(empty by default). See the [tool's README](tools/rdap-tld-redirect-gen/README.md).
+
+```sh
+# generate redirects into a data dir, then run the image against it
+cargo run --manifest-path tools/rdap-tld-redirect-gen/Cargo.toml -- --data-dir ./data
+docker run -d -p 3000:3000 -v "$PWD/data:/data" rdap-bootstrap
+```
+
 ## Notes
 
 - The image runs as a non-root user (`rdap`, uid 10001).

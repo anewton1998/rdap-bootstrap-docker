@@ -1,0 +1,31 @@
+# --- Rust build artifacts ---
+/target
+**/target
+# rustfmt / backup files
+**/*.rs.bk
+# debug symbols
+**/*.pdb
+
+# Cargo.lock is intentionally NOT ignored: rdap-tld-redirect-gen is a binary
+# tool and committing the lockfile keeps its (git-pinned) dependency graph
+# reproducible.
+
+# --- Generated redirect data ---
+# Output of rdap-tld-redirect-gen (tld_redirect_*.template) when run with
+# `--data-dir ./data`. Regenerate as needed; not source.
+/data/
+
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
+
+# --- Editors / IDEs ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Logs / scratch ---
+*.log
+scratch/
