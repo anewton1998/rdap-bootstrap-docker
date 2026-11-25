@@ -12,7 +12,10 @@
 //! redirect queries for that TLD to the discovered RDAP base.
 //!
 //! A configurable exception list of TLDs is never scanned. It is empty by default.
+//! TLDs whose RDAP server does not follow the probe pattern can be pinned to an
+//! explicit base URL via the bundled `overrides.txt` (or `--overrides-file`).
 
+mod overrides;
 mod probe;
 mod redirect;
 mod zone;
@@ -28,6 +31,10 @@ use futures::stream::{self, StreamExt};
 use icann_rdap_client::http::{create_client, Client, ClientConfig};
 use icann_rdap_client::iana::iana_request;
 use icann_rdap_common::iana::{IanaRegistry, IanaRegistryType};
+
+/// Bundled default override mappings (compiled in so the default works from any
+/// working directory).
+pub(crate) const DEFAULT_OVERRIDES: &str = include_str!("../overrides.txt");
 
 /// Generate RDAP 307 redirect templates for TLDs missing from the IANA bootstrap.
 #[derive(Parser, Debug)]
@@ -48,6 +55,11 @@ struct Cli {
     /// Optional file listing TLDs to exclude (one per line, `#` comments allowed).
     #[arg(long)]
     exclude_file: Option<PathBuf>,
+
+    /// File mapping TLDs to explicit RDAP base URLs for servers that do not
+    /// follow the probe pattern. Defaults to the bundled `overrides.txt`.
+    #[arg(long)]
+    overrides_file: Option<PathBuf>,
 
     /// Maximum number of concurrent probes.
     #[arg(long, default_value_t = 16)]
@@ -101,11 +113,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let removed = redirect::clear_redirect_files(&cli.data_dir)?;
     eprintln!("Cleared {removed} previous redirect file(s)");
 
+    let overrides = match cli.overrides_file.as_deref() {
+        Some(path) => overrides::parse_overrides(&fs::read_to_string(path)?),
+        None => overrides::parse_overrides(DEFAULT_OVERRIDES),
+    };
+    let override_hits = uncovered
+        .iter()
+        .filter(|t| overrides.contains_key(*t))
+        .count();
+    eprintln!(
+        "Loaded {} override mapping(s); {} of the scanned TLD(s) are overridden",
+        overrides.len(),
+        override_hits
+    );
+
     let rdap = &rdap;
+    let overrides = &overrides;
     let mut found: Vec<(String, String)> = stream::iter(uncovered)
         .map(|tld| async move {
-            let base = probe::find_rdap_base(rdap, &tld).await;
-            (tld, base)
+            if let Some(base) = overrides.get(&tld) {
+                (tld, Some(base.clone()))
+            } else {
+                let base = probe::find_rdap_base(rdap, &tld).await;
+                (tld, base)
+            }
         })
         .buffer_unordered(cli.concurrency)
         .filter_map(|(tld, base)| async move { base.map(|b| (tld, b)) })
@@ -178,9 +209,11 @@ fn build_excluded(cli: &[String], file: Option<&Path>) -> Result<HashSet<String>
     Ok(excluded)
 }
 
-/// Normalise a TLD for comparison: trim, drop a trailing dot, lower-case.
-fn normalize_tld(s: &str) -> String {
-    s.trim().trim_end_matches('.').to_ascii_lowercase()
+/// Normalise a TLD for comparison: trim whitespace, drop any leading/trailing
+/// dots, lower-case. (A TLD never contains interior dots, so trimming both ends
+/// is safe and lets callers write either `io` or `.io`.)
+pub(crate) fn normalize_tld(s: &str) -> String {
+    s.trim().trim_matches('.').to_ascii_lowercase()
 }
 
 #[cfg(test)]

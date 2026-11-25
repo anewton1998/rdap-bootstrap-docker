@@ -70,6 +70,7 @@ cargo run -- --data-dir /data
 | `--root-zone-url` | `https://www.internic.net/domain/root.zone` | Root zone file URL |
 | `--exclude <tld>` | *(empty)* | TLD to skip from scanning. Repeatable |
 | `--exclude-file <path>` | *(none)* | File of TLDs to skip, one per line (`#` comments allowed) |
+| `--overrides-file <path>` | bundled `overrides.txt` | File mapping TLDs to explicit RDAP base URLs |
 | `--concurrency` | `16` | Max concurrent probes |
 | `--timeout-secs` | `10` | Per-request timeout |
 
@@ -86,6 +87,30 @@ example
 
 A TLD added to the exception list on a later run has any previously generated
 redirect file removed (via the per-run clear).
+
+### Overrides (non-pattern servers)
+
+Some TLDs host their RDAP server at a host that the `nic.<tld>` probe will never
+find. These are pinned to an explicit base URL in the bundled
+[`overrides.txt`](overrides.txt), which is compiled into the binary (so the
+default works from any directory). For a TLD listed there, the tool uses the given
+base directly and does **not** probe.
+
+Format — `<TLD><whitespace><RDAP base URL>` per line; blank lines and `#`
+comments are ignored; the base URL is normalised to end with `/`:
+
+```
+.io	https://rdap.identitydigital.services/rdap
+.me	https://rdap.identitydigital.services/rdap
+.sh	https://rdap.identitydigital.services
+.co	https://rdap.registry.co/co
+.ru	https://cctld.ru/tci-ripn-rdap
+.de	https://rdap.denic.de
+```
+
+Overrides only take effect for TLDs that are delegated in the root zone but absent
+from the IANA bootstrap (the same set that would otherwise be probed). Supply a
+different mapping at runtime with `--overrides-file <path>`.
 
 ## Verifying
 

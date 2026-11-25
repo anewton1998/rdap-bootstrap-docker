@@ -43,7 +43,7 @@ pub async fn find_rdap_base(client: &Client, tld: &str) -> Option<String> {
 
 /// Ensure a base URL ends with a single `/` so the bootstrap server can append
 /// `domain/<name>` to it.
-fn normalize_base(base: &str) -> String {
+pub(crate) fn normalize_base(base: &str) -> String {
     if base.ends_with('/') {
         base.to_string()
     } else {

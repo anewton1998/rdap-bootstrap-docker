@@ -69,8 +69,10 @@ bootstrap. The optional [`tools/rdap-tld-redirect-gen`](tools/rdap-tld-redirect-
 crate scans the root zone, probes each uncovered TLD for an RDAP server at
 `https://nic.<tld>`, `https://rdap.nic.<tld>`, and `https://nic.<tld>/rdap`, and
 writes `307` redirect templates into the data directory so the server can refer
-queries for those TLDs. It supports a configurable exception list of TLDs to skip
-(empty by default). See the [tool's README](tools/rdap-tld-redirect-gen/README.md).
+queries for those TLDs. TLDs whose server does not follow that pattern (e.g.
+`.de`, `.io`, `.co`) are pinned via a bundled `overrides.txt`, and a configurable
+exception list of TLDs to skip is supported (empty by default). See the
+[tool's README](tools/rdap-tld-redirect-gen/README.md).
 
 ```sh
 # generate redirects into a data dir, then run the image against it

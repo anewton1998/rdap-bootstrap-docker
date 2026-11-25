@@ -1,0 +1,19 @@
+# RDAP servers that do NOT follow the nic.<tld> / rdap.nic.<tld> / nic.<tld>/rdap
+# probe pattern. For each TLD listed here the tool uses the given base URL
+# directly instead of probing.
+#
+# Format: <TLD><whitespace><RDAP base URL>
+#   - Blank lines and lines starting with '#' are ignored.
+#   - Trailing '#' comments are ignored.
+#   - TLDs are matched case-insensitively (trailing dot optional).
+#   - Base URLs are normalised to end with '/'.
+#
+# Only applies to TLDs that are delegated in the root zone but absent from the
+# IANA RDAP DNS bootstrap (i.e. the same set that would otherwise be probed).
+
+.io	https://rdap.identitydigital.services/rdap
+.me	https://rdap.identitydigital.services/rdap
+.sh	https://rdap.identitydigital.services
+.co	https://rdap.registry.co/co
+.ru	https://cctld.ru/tci-ripn-rdap
+.de	https://rdap.denic.de
