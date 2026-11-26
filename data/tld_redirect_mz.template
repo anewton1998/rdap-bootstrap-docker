@@ -1,0 +1,28 @@
+{
+  "domain": {
+    "error": {
+      "rdapConformance": [
+        "rdap_level_0"
+      ],
+      "notices": [
+        {
+          "description": [],
+          "links": [
+            {
+              "value": "https://rdap.nic.mz/",
+              "rel": "related",
+              "href": "https://rdap.nic.mz/",
+              "type": "application/rdap+json"
+            }
+          ]
+        }
+      ],
+      "errorCode": 307
+    }
+  },
+  "ids": [
+    {
+      "ldhName": "mz"
+    }
+  ]
+}

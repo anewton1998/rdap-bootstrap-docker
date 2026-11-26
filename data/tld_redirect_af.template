@@ -1,0 +1,28 @@
+{
+  "domain": {
+    "error": {
+      "rdapConformance": [
+        "rdap_level_0"
+      ],
+      "notices": [
+        {
+          "description": [],
+          "links": [
+            {
+              "value": "https://rdap.nic.af/",
+              "rel": "related",
+              "href": "https://rdap.nic.af/",
+              "type": "application/rdap+json"
+            }
+          ]
+        }
+      ],
+      "errorCode": 307
+    }
+  },
+  "ids": [
+    {
+      "ldhName": "af"
+    }
+  ]
+}

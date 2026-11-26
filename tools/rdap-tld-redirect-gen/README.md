@@ -9,6 +9,9 @@ an RDAP server is found, writes a `tld_redirect_<tld>.template` file into the
 `icann-rdap-srv` data directory. The bootstrap server then answers queries for
 any name under that TLD with a `307` redirect to the discovered RDAP base.
 
+Each run also writes an RDAP help file (`__default.help`) so the server's
+`/rdap/help` endpoint lists every redirect that was synthesized.
+
 ## How it works
 
 1. Fetch the IANA RDAP DNS bootstrap (`https://data.iana.org/rdap/dns.json`) and
@@ -71,6 +74,7 @@ cargo run -- --data-dir /data
 | `--exclude <tld>` | *(empty)* | TLD to skip from scanning. Repeatable |
 | `--exclude-file <path>` | *(none)* | File of TLDs to skip, one per line (`#` comments allowed) |
 | `--overrides-file <path>` | bundled `overrides.txt` | File mapping TLDs to explicit RDAP base URLs |
+| `--no-help-file` | *(off)* | Do not write the `__default.help` listing of synthesized redirects |
 | `--concurrency` | `16` | Max concurrent probes |
 | `--timeout-secs` | `10` | Per-request timeout |
 
@@ -112,6 +116,38 @@ Overrides only take effect for TLDs that are delegated in the root zone but abse
 from the IANA bootstrap (the same set that would otherwise be probed). Supply a
 different mapping at runtime with `--overrides-file <path>`.
 
+### Help file
+
+Each run also writes an RDAP **server help** file, `__default.help`, into the data
+directory so the bootstrap server's `/rdap/help` endpoint documents which
+redirects were synthesized. The file is a standard RDAP `Help` document (a
+`notices` array, no `objectClassName`) containing one notice titled
+`Synthesized RDAP Redirects`: a summary line followed by one line per TLD,
+tagged with how it was obtained (`probe` or `override`).
+
+The file name is significant: `rdap-srv` maps a `.help` file name to the host it
+applies to by replacing `_` with `.`, so `__default.help` becomes the `..default`
+key served for any host without a host-specific help file. **This tool owns
+`__default.help` and overwrites it on every run.** Pass `--no-help-file` to skip
+writing it; any previously generated copy is then removed so the listing never
+goes stale.
+
+```json
+{
+  "rdapConformance": ["rdap_level_0"],
+  "notices": [
+    {
+      "title": "Synthesized RDAP Redirects",
+      "description": [
+        "23 TLD(s) redirected: 17 discovered by probe, 6 from overrides.",
+        ".de -> https://rdap.denic.de/ (override)",
+        ".ch -> https://rdap.nic.ch/ (probe)"
+      ]
+    }
+  ]
+}
+```
+
 ## Verifying
 
 After generating, point an `icann-rdap-srv` bootstrap server at the data
@@ -122,6 +158,28 @@ curl -i http://localhost:3000/rdap/domain/example.ch
 # HTTP/1.1 307 Temporary Redirect
 # ... link to https://rdap.nic.ch/domain/example.ch
 ```
+
+The help listing is served at the `help` endpoint:
+
+```sh
+curl -s http://localhost:3000/rdap/help | jq '.notices[0].description[0]'
+# "23 TLD(s) redirected: 17 discovered by probe, 6 from overrides."
+```
+
+## Baking into the Docker image
+
+The repo commits this tool's output under `data/` (only `tld_redirect_*.template`
+and `__default.help`; the server's runtime cache stays gitignored) and the
+`Dockerfile` bakes it into the image at `/data`. To refresh the baked-in set:
+
+```sh
+cargo run --release --manifest-path tools/rdap-tld-redirect-gen/Cargo.toml -- --data-dir ./data
+git add -A data/
+git commit -m "chore: refresh synthesized redirect data"
+```
+
+The CI image build fails fast if `data/__default.help` or any
+`data/tld_redirect_*.template` is missing.
 
 ## Tests
 

@@ -29,8 +29,12 @@ RUN apt-get update \
 
 COPY --from=builder /rdap-srv /usr/local/bin/rdap-srv
 
-# data directory used for the IANA bootstrap cache
-RUN mkdir -p /data && chown rdap:rdap /data
+# Bake the synthesized redirect templates + help listing (committed under ./data)
+# into the data directory. COPY --chown creates /data owned by the runtime user;
+# VOLUME after COPY captures the baked content so a fresh container with no bind
+# mount still serves it. At startup rdap-srv writes its own bootstrap_* / cache
+# files alongside these (different prefixes, no clash).
+COPY --chown=rdap:rdap data/ /data/
 VOLUME ["/data"]
 
 # run as a bootstrap server

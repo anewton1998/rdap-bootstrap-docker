@@ -1,0 +1,28 @@
+{
+  "domain": {
+    "error": {
+      "rdapConformance": [
+        "rdap_level_0"
+      ],
+      "notices": [
+        {
+          "description": [],
+          "links": [
+            {
+              "value": "https://rdap.nic.tl/",
+              "rel": "related",
+              "href": "https://rdap.nic.tl/",
+              "type": "application/rdap+json"
+            }
+          ]
+        }
+      ],
+      "errorCode": 307
+    }
+  },
+  "ids": [
+    {
+      "ldhName": "tl"
+    }
+  ]
+}

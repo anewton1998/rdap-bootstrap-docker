@@ -1,0 +1,28 @@
+{
+  "domain": {
+    "error": {
+      "rdapConformance": [
+        "rdap_level_0"
+      ],
+      "notices": [
+        {
+          "description": [],
+          "links": [
+            {
+              "value": "https://rdap.nic.ci/",
+              "rel": "related",
+              "href": "https://rdap.nic.ci/",
+              "type": "application/rdap+json"
+            }
+          ]
+        }
+      ],
+      "errorCode": 307
+    }
+  },
+  "ids": [
+    {
+      "ldhName": "ci"
+    }
+  ]
+}

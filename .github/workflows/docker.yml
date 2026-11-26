@@ -20,6 +20,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify committed redirect data
+        run: |
+          test -f data/__default.help || { echo "::error::data/__default.help missing - run rdap-tld-redirect-gen and commit it"; exit 1; }
+          compgen -G "data/tld_redirect_*.template" > /dev/null || { echo "::error::no data/tld_redirect_*.template committed"; exit 1; }
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 

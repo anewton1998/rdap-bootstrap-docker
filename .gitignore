@@ -11,9 +11,13 @@
 # reproducible.
 
 # --- Generated redirect data ---
-# Output of rdap-tld-redirect-gen (tld_redirect_*.template) when run with
-# `--data-dir ./data`. Regenerate as needed; not source.
-/data/
+# The rdap-tld-redirect-gen output (tld_redirect_*.template + __default.help) is
+# committed so the Docker image can bake it in. The server's runtime bootstrap
+# cache (bootstrap_*, *.iana_cache, reload) written into ./data when a container
+# mounts it stays ignored.
+/data/*
+!/data/tld_redirect_*.template
+!/data/__default.help
 
 # --- OS cruft ---
 .DS_Store

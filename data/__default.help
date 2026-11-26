@@ -1,0 +1,36 @@
+{
+  "rdapConformance": [
+    "rdap_level_0"
+  ],
+  "notices": [
+    {
+      "title": "Synthesized RDAP Redirects",
+      "description": [
+        "23 TLD(s) redirected: 17 discovered by probe, 6 from overrides.",
+        ".af -> https://rdap.nic.af/ (probe)",
+        ".aw -> https://rdap.nic.aw/ (probe)",
+        ".ch -> https://rdap.nic.ch/ (probe)",
+        ".ci -> https://rdap.nic.ci/ (probe)",
+        ".co -> https://rdap.registry.co/co/ (override)",
+        ".de -> https://rdap.denic.de/ (override)",
+        ".ga -> https://rdap.nic.ga/ (probe)",
+        ".io -> https://rdap.identitydigital.services/rdap/ (override)",
+        ".ki -> https://rdap.nic.ki/ (probe)",
+        ".kn -> https://rdap.nic.kn/ (probe)",
+        ".kz -> https://rdap.nic.kz/ (probe)",
+        ".li -> https://rdap.nic.li/ (probe)",
+        ".me -> https://rdap.identitydigital.services/rdap/ (override)",
+        ".mr -> https://rdap.nic.mr/ (probe)",
+        ".mz -> https://rdap.nic.mz/ (probe)",
+        ".ru -> https://cctld.ru/tci-ripn-rdap/ (override)",
+        ".sb -> https://rdap.nic.sb/ (probe)",
+        ".sh -> https://rdap.identitydigital.services/ (override)",
+        ".so -> https://rdap.nic.so/ (probe)",
+        ".sy -> https://rdap.nic.sy/ (probe)",
+        ".td -> https://rdap.nic.td/ (probe)",
+        ".tl -> https://rdap.nic.tl/ (probe)",
+        ".us -> https://rdap.nic.us/ (probe)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# Keep the Docker build context lean.
+.git
+**/target
+
+# Never bake the rdap-srv runtime bootstrap cache that a container may have
+# written into ./data. Only the committed generator output (tld_redirect_*.template
+# and __default.help) should reach the image.
+data/bootstrap_*
+data/*.iana_cache
+data/reload

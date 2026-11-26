@@ -14,7 +14,12 @@
 //! A configurable exception list of TLDs is never scanned. It is empty by default.
 //! TLDs whose RDAP server does not follow the probe pattern can be pinned to an
 //! explicit base URL via the bundled `overrides.txt` (or `--overrides-file`).
+//!
+//! Each run also writes an RDAP help file (`__default.help`) into the data
+//! directory so the bootstrap server's `/help` endpoint lists every redirect
+//! that was synthesized. Disable with `--no-help-file`.
 
+mod help;
 mod overrides;
 mod probe;
 mod redirect;
@@ -60,6 +65,11 @@ struct Cli {
     /// follow the probe pattern. Defaults to the bundled `overrides.txt`.
     #[arg(long)]
     overrides_file: Option<PathBuf>,
+
+    /// Do not write the RDAP help file (`__default.help`) that lists the
+    /// synthesized redirects. Any previously generated help file is removed.
+    #[arg(long)]
+    no_help_file: bool,
 
     /// Maximum number of concurrent probes.
     #[arg(long, default_value_t = 16)]
@@ -129,23 +139,39 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let rdap = &rdap;
     let overrides = &overrides;
-    let mut found: Vec<(String, String)> = stream::iter(uncovered)
+    let mut found: Vec<(String, String, help::Source)> = stream::iter(uncovered)
         .map(|tld| async move {
             if let Some(base) = overrides.get(&tld) {
-                (tld, Some(base.clone()))
+                (tld, Some((base.clone(), help::Source::Override)))
             } else {
-                let base = probe::find_rdap_base(rdap, &tld).await;
-                (tld, base)
+                let hit = probe::find_rdap_base(rdap, &tld)
+                    .await
+                    .map(|b| (b, help::Source::Probed));
+                (tld, hit)
             }
         })
         .buffer_unordered(cli.concurrency)
-        .filter_map(|(tld, base)| async move { base.map(|b| (tld, b)) })
+        .filter_map(|(tld, hit)| async move { hit.map(|(base, source)| (tld, base, source)) })
         .collect()
         .await;
     found.sort();
 
+    // Write the help listing before the redirect files so that, if a redirect
+    // write fails partway through, the help file still reflects the intended full
+    // set rather than a stale previous run.
+    if cli.no_help_file {
+        let removed = help::clear_help_file(&cli.data_dir)?;
+        if removed > 0 {
+            eprintln!("Removed {removed} stale help file(s)");
+        }
+    } else {
+        let help_response = help::build_help_response(&found);
+        let path = help::write_help_file(&cli.data_dir, &help_response)?;
+        eprintln!("Wrote help file {}", path.display());
+    }
+
     let mut written = 0usize;
-    for (tld, base) in &found {
+    for (tld, base, _source) in &found {
         redirect::write_redirect_file(&cli.data_dir, tld, base)?;
         eprintln!("  redirect {tld} -> {base}");
         written += 1;
