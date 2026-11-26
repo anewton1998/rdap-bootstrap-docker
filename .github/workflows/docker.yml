@@ -10,42 +10,24 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  meta:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
+    outputs:
+      rdap_sha: ${{ steps.rdapref.outputs.sha }}
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Verify committed redirect data
         run: |
           test -f data/__default.help || { echo "::error::data/__default.help missing - run rdap-tld-redirect-gen and commit it"; exit 1; }
           compgen -G "data/tld_redirect_*.template" > /dev/null || { echo "::error::no data/tld_redirect_*.template committed"; exit 1; }
-
       - name: Resolve icann-rdap dev SHA
         id: rdapref
         run: |
           sha="$(git ls-remote https://github.com/icann/icann-rdap.git dev | cut -f1)"
           test -n "$sha" || { echo "::error::could not resolve icann-rdap dev SHA"; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "Resolved icann-rdap dev SHA: $sha"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -57,15 +39,64 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ github.event_name == 'push' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
-      - name: Build and push
+  build:
+    needs: meta
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push (single arch)
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/${{ matrix.arch }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:tmp-${{ github.run_id }}-${{ matrix.arch }}
+          labels: ${{ needs.meta.outputs.labels }}
           build-args: |
-            ICANN_RDAP_REF=${{ steps.rdapref.outputs.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ICANN_RDAP_REF=${{ needs.meta.outputs.rdap_sha }}
+          cache-from: type=gha,scope=rdap-${{ matrix.arch }}
+          cache-to: type=gha,scope=rdap-${{ matrix.arch }},mode=max
+
+  merge:
+    needs: [meta, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create multi-arch manifest list
+        env:
+          TAGS: ${{ needs.meta.outputs.tags }}
+          AMD64: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:tmp-${{ github.run_id }}-amd64
+          ARM64: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:tmp-${{ github.run_id }}-arm64
+        run: |
+          set -euo pipefail
+          readarray -t tags <<< "$TAGS"
+          args=()
+          for t in "${tags[@]}"; do
+            [ -n "$t" ] && args+=(-t "$t")
+          done
+          docker buildx imagetools create "${args[@]}" "$AMD64" "$ARM64"
