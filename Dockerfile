@@ -8,8 +8,17 @@ RUN apt-get update \
 
 WORKDIR /build
 
-# clone the dev branch (public repo; use https so no SSH keys are needed at build time)
-RUN git clone --depth 1 --branch dev https://github.com/icann/icann-rdap.git src
+# icann-rdap revision to build (public repo; https so no SSH keys are needed).
+# The CI workflow resolves the live `dev` HEAD SHA and passes it here, so each
+# image is built from current `dev` AND the Docker layer cache keys on the SHA
+# (a plain `git clone --branch dev` layer would silently reuse a stale snapshot).
+# The default below is a known-good pinned commit for local `docker build`;
+# override with --build-arg ICANN_RDAP_REF=<sha-or-branch>.
+ARG ICANN_RDAP_REF=1ab10f0a63a3842cc7cf6d3a51ca0afe2333542e
+RUN git init src \
+    && git -C src remote add origin https://github.com/icann/icann-rdap.git \
+    && git -C src fetch --depth 1 origin "${ICANN_RDAP_REF}" \
+    && git -C src checkout FETCH_HEAD
 
 WORKDIR /build/src
 
@@ -47,6 +56,7 @@ ENV RDAP_SRV_BOOTSTRAP=true \
     RDAP_SRV_ACCESS_LOG=true \
     RDAP_SRV_TLD_BOOTSTRAP=true \
     RDAP_SRV_INR_BACKUP_BOOTSTRAP=true \
+    RDAP_SRV_BOOTSTRAP_EXEMPT_OBJECT_TAGS=RCODE3 \
     RDAP_SRV_IP_RDAP_UP=true \
     RDAP_SRV_IP_RDAP_DOWN=true \
     RDAP_SRV_IP_RDAP_TOP=true \

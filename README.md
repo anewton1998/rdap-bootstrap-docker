@@ -43,6 +43,7 @@ All configuration is via environment variables (see `icann-rdap-srv` docs). Defa
 | `RDAP_SRV_ACCESS_LOG` | `true` | Enable HTTP access logging |
 | `RDAP_SRV_TLD_BOOTSTRAP` | `true` | Enable TLD bootstrap fetching |
 | `RDAP_SRV_INR_BACKUP_BOOTSTRAP` | `true` | Enable INR (address/ASN) backup bootstrap source |
+| `RDAP_SRV_BOOTSTRAP_EXEMPT_OBJECT_TAGS` | `RCODE3` | Comma-separated entity-handle registry tags exempt from bootstrap. A not-found entity whose tag is listed returns `404` instead of a bootstrap redirect (matched case-insensitively) |
 | `RDAP_SRV_IP_RDAP_UP` | `true` | Enable IPv4/IPv6 RDAP `up` relation referrals |
 | `RDAP_SRV_IP_RDAP_DOWN` | `true` | Enable IPv4/IPv6 RDAP `down` relation referrals |
 | `RDAP_SRV_IP_RDAP_TOP` | `true` | Enable IPv4/IPv6 RDAP `top` relation referrals |
@@ -111,4 +112,8 @@ image via `.dockerignore`. The CI build fails fast if `data/__default.help` or a
 - The image runs as a non-root user (`rdap`, uid 10001).
 - `/data` is pre-populated with the committed synthesized redirect data and declared
   as a volume; the server adds its IANA bootstrap cache there at runtime.
-- To pin a different branch or tag, edit the `git clone --branch` line in the `Dockerfile`.
+- The `icann-rdap` source is built from a commit passed via the `ICANN_RDAP_REF`
+  build arg. CI resolves the live `dev` HEAD SHA each run and passes it in, so the
+  image tracks current `dev` while the Docker layer cache stays correct (a plain
+  `git clone --branch dev` layer would silently reuse a stale snapshot). For a
+  local build, override with `--build-arg ICANN_RDAP_REF=<sha-or-branch>`.
